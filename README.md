@@ -1,0 +1,1 @@
+Iniciando Repositorio para evaluar el diagrama, coordinar trabajo en cooperativo y asegurar el uso de conventional commits.
