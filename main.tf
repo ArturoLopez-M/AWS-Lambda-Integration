@@ -56,3 +56,43 @@ resource "aws_subnet" "private_b" {
     Name = "subnet-private-b-${var.environment}"
   }
 }
+
+resource "aws_s3_bucket" "images_bucket" {
+
+  bucket = "image-processor-${var.environment}-bucket-123" 
+  force_destroy = true 
+
+  tags = {
+    Name = "bucket-images-${var.environment}"
+  }
+}
+
+resource "aws_route_table" "private" {
+  vpc_id = aws_vpc.main.id
+  
+  tags = {
+    Name = "rt-private-${var.environment}"
+  }
+}
+
+resource "aws_route_table_association" "private_a" {
+  subnet_id      = aws_subnet.private_a.id
+  route_table_id = aws_route_table.private.id
+}
+
+resource "aws_route_table_association" "private_b" {
+  subnet_id      = aws_subnet.private_b.id
+  route_table_id = aws_route_table.private.id
+}
+
+resource "aws_vpc_endpoint" "s3" {
+  vpc_id            = aws_vpc.main.id
+  service_name      = "com.amazonaws.us-east-1.s3"
+  vpc_endpoint_type = "Gateway"
+  
+  route_table_ids   = [aws_route_table.private.id]
+
+  tags = {
+    Name = "vpce-s3-${var.environment}"
+  }
+}
