@@ -33,3 +33,51 @@ resource "aws_s3_bucket_versioning" "images" {
     status = "Enabled"
   }
 }
+
+# Lifecycle: uploads 30 dias, processed 90 dias
+resource "aws_s3_bucket_lifecycle_configuration" "images" {
+  bucket     = aws_s3_bucket.images_bucket.id
+  depends_on = [aws_s3_bucket_versioning.images]
+
+  rule {
+    id     = "uploads-30-dias"
+    status = "Enabled"
+
+    filter {
+      prefix = "uploads/"
+    }
+
+    expiration {
+      days = 30
+    }
+
+    noncurrent_version_expiration {
+      noncurrent_days = 1
+    }
+
+    abort_incomplete_multipart_upload {
+      days_after_initiation = 1
+    }
+  }
+
+  rule {
+    id     = "processed-90-dias"
+    status = "Enabled"
+
+    filter {
+      prefix = "processed/"
+    }
+
+    expiration {
+      days = 90
+    }
+
+    noncurrent_version_expiration {
+      noncurrent_days = 1
+    }
+
+    abort_incomplete_multipart_upload {
+      days_after_initiation = 1
+    }
+  }
+}
