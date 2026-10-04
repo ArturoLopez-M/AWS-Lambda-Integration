@@ -59,7 +59,7 @@ resource "aws_subnet" "private_b" {
 
 resource "aws_s3_bucket" "images_bucket" {
 
-  bucket = "image-processor-${var.environment}-bucket-123" 
+  bucket = "image-processor-${var.environment}-images-${random_id.bucket_suffix.hex}" 
   force_destroy = true 
 
   tags = {
