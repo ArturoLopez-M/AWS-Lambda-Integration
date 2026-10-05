@@ -18,3 +18,25 @@ resource "aws_sqs_queue" "main" {
     maxReceiveCount     = 3
   })
 }
+
+data "aws_caller_identity" "current" {}
+
+# Permite que el bucket envie mensajes a la cola
+resource "aws_sqs_queue_policy" "allow_s3" {
+  queue_url = aws_sqs_queue.main.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Sid       = "PermitirS3"
+      Effect    = "Allow"
+      Principal = { Service = "s3.amazonaws.com" }
+      Action    = "sqs:SendMessage"
+      Resource  = aws_sqs_queue.main.arn
+      Condition = {
+        ArnEquals    = { "aws:SourceArn" = aws_s3_bucket.images_bucket.arn }
+        StringEquals = { "aws:SourceAccount" = data.aws_caller_identity.current.account_id }
+      }
+    }]
+  })
+}

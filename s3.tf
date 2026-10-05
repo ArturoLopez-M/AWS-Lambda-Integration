@@ -81,3 +81,17 @@ resource "aws_s3_bucket_lifecycle_configuration" "images" {
     }
   }
 }
+
+# Avisa a la cola cuando se sube un archivo a uploads/
+# El filtro evita que processed/ genere eventos "infinitos"
+resource "aws_s3_bucket_notification" "images" {
+  bucket = aws_s3_bucket.images_bucket.id
+
+  queue {
+    queue_arn     = aws_sqs_queue.main.arn
+    events        = ["s3:ObjectCreated:*"]
+    filter_prefix = local.uploads_prefix
+  }
+
+  depends_on = [aws_sqs_queue_policy.allow_s3]
+}
