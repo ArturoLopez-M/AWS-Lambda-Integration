@@ -45,3 +45,56 @@ resource "aws_iam_role_policy" "upload" {
     ]
   })
 }
+
+# Rol de crop-lambda
+resource "aws_iam_role" "crop" {
+  name               = "crop-lambda-role-${var.environment}"
+  assume_role_policy = data.aws_iam_policy_document.lambda_assume.json
+}
+
+# Permisos de red para que la lambda funcione dentro de la VPC
+resource "aws_iam_role_policy_attachment" "crop_vpc" {
+  role       = aws_iam_role.crop.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole"
+}
+
+# Logs, lectura en uploads/, escritura en processed/ y consumo de la cola
+resource "aws_iam_role_policy" "crop" {
+  name = "crop-lambda-policy"
+  role = aws_iam_role.crop.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid      = "Logs"
+        Effect   = "Allow"
+        Action   = ["logs:CreateLogStream", "logs:PutLogEvents"]
+        Resource = "${aws_cloudwatch_log_group.crop.arn}:*"
+      },
+      {
+        Sid      = "GetObjectEnUploads"
+        Effect   = "Allow"
+        Action   = ["s3:GetObject"]
+        Resource = "${aws_s3_bucket.images_bucket.arn}/${local.uploads_prefix}*"
+      },
+      {
+        Sid      = "PutObjectEnProcessed"
+        Effect   = "Allow"
+        Action   = ["s3:PutObject"]
+        Resource = "${aws_s3_bucket.images_bucket.arn}/${local.processed_prefix}*"
+      },
+      {
+        Sid    = "ConsumirCola"
+        Effect = "Allow"
+        Action = [
+          "sqs:ReceiveMessage",
+          "sqs:DeleteMessage",
+          "sqs:GetQueueAttributes",
+          "sqs:ChangeMessageVisibility"
+        ]
+        Resource = aws_sqs_queue.main.arn
+      }
+    ]
+  })
+}
